@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: seo-pro-datahub
+Version: 0.1.0
+Summary: Connectors for external SEO data sources (GSC, rank tracking, backlinks).
+Author: SEO PRO
+Requires-Python: >=3.11
+Requires-Dist: httpx
+Requires-Dist: pydantic>=2
+Requires-Dist: google-api-python-client
+Requires-Dist: google-auth
+Requires-Dist: google-auth-oauthlib
+Requires-Dist: google-analytics-data
+Requires-Dist: google-analytics-admin
+Requires-Dist: sqlmodel
+Requires-Dist: cryptography
+Requires-Dist: itsdangerous
+Provides-Extra: serp
+Requires-Dist: serpapi>=0.1.5; extra == "serp"
+Provides-Extra: backlinks

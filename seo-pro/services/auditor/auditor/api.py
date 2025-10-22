@@ -1,19 +1,20 @@
 """SEO PRO Auditor API."""
 
 from __future__ import annotations
-
 import asyncio
+import datetime as dt
+from dotenv import load_dotenv
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
-
 import httpx
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-
 from auditor.analyzer import analyze_html
 from auditor.crawler import crawl
 from auditor.rules import RULES
+
+load_dotenv()
 
 try:
     from datahub import (
@@ -25,6 +26,34 @@ except ImportError:  # datahub is optional at runtime
     fetch_backlink_overview = None  # type: ignore
     fetch_rank_positions = None  # type: ignore
     fetch_search_console_summary = None  # type: ignore
+
+
+from fastapi.responses import RedirectResponse, JSONResponse
+from auditor.google_oauth import (
+    build_auth_url,
+    gen_pkce,
+    exchange_code,
+    refresh_access_token,
+    save_connection,
+    get_connection,
+    SCOPES,
+    SIGNER_AVAILABLE,
+    BadSignature,
+    signer,
+)
+
+try:
+    import google.analytics.data_v1beta as ga_data
+    from google.analytics.data_v1beta.types import DateRange, Metric, Dimension, RunReportRequest
+    from googleapiclient.discovery import build as gapi_build
+    from google.oauth2 import credentials as oauth2_credentials
+except ImportError:  # optional dependency
+    ga_data = None  # type: ignore
+    DateRange = Metric = Dimension = RunReportRequest = None  # type: ignore
+    gapi_build = None  # type: ignore
+    oauth2_credentials = None  # type: ignore
+
+
 
 app = FastAPI(title="SEO PRO Auditor", version="0.2.0")
 app.add_middleware(
@@ -38,6 +67,124 @@ app.add_middleware(
 PSI_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 _PSI_CACHE: Dict[Tuple[str, str], Tuple[float, Dict[str, Any]]] = {}
 _PSI_TTL = 60 * 60
+
+
+
+
+PKCE_STORE: dict[str, str] = {}
+
+# -------- OAuth START ----------
+@app.get("/oauth2/google/start")
+def oauth_start(provider: str, site: str):
+    if not SIGNER_AVAILABLE:
+        return JSONResponse({"error": "itsdangerous no instalado; no se puede iniciar OAuth"}, status_code=501)
+    if provider not in SCOPES:
+        return JSONResponse({"error":"provider inválido"}, status_code=400)
+    verifier, challenge = gen_pkce()
+    # guardamos el verifier en memoria usando hash del (provider,site)
+    key = f"{provider}:{site}"
+    PKCE_STORE[key] = verifier
+    url = build_auth_url(provider, site, challenge)
+    return JSONResponse({"auth_url": url})
+
+# -------- OAuth CALLBACK ----------
+@app.get("/oauth2/google/callback")
+async def oauth_callback(request: Request):
+    params = dict(request.query_params)
+    if "error" in params:
+        return JSONResponse({"error": params.get("error"), "desc": params.get("error_description")}, status_code=400)
+    code  = params.get("code")
+    state = params.get("state")
+    if not SIGNER_AVAILABLE or signer is None:
+        return JSONResponse({"error": "itsdangerous no instalado; no se puede validar state"}, status_code=501)
+    try:
+        parsed = signer.loads(state)  # {"p":provider, "site":site}
+    except BadSignature:
+        return JSONResponse({"error":"state inválido"}, status_code=400)
+    provider, site = parsed["p"], parsed["site"]
+    verifier = PKCE_STORE.get(f"{provider}:{site}")
+    if not verifier:
+        return JSONResponse({"error":"PKCE no encontrado (reinicia flujo)"}, status_code=400)
+
+    tokens = await exchange_code(code, verifier)
+    refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        return JSONResponse({"error":"No hubo refresh_token (intenta con prompt=consent)"}, status_code=400)
+
+    save_connection(provider, site, refresh_token, " ".join(SCOPES[provider]))
+    # Redirige a tu frontend con éxito
+    return RedirectResponse(url=f"http://localhost:4000/?connected={provider}")
+
+# -------- Estado de conexión ----------
+@app.get("/integrations/status")
+def integrations_status(site: str):
+    return {
+        "ga4": bool(get_connection("ga4", site)),
+        "gsc": bool(get_connection("gsc", site)),
+    }
+
+# -------- GA4: pequeño reporte ----------
+@app.get("/ga4/report")
+async def ga4_report(site: str, property_id: str, start_date: str = "28daysAgo", end_date: str = "today"):
+    if ga_data is None or oauth2_credentials is None or RunReportRequest is None:
+        return JSONResponse(
+            {"error": "Dependencias de Google Analytics no instaladas. Ejecuta `pip install google-analytics-data`."},
+            status_code=501,
+        )
+    conn = get_connection("ga4", site)
+    if not conn: return JSONResponse({"error":"GA4 no conectado para este sitio"}, status_code=400)
+    tokens = await refresh_access_token(conn["refresh_token"])
+    cred = tokens["access_token"]
+
+    credentials = oauth2_credentials.Credentials(
+        token=cred,
+        refresh_token=conn["refresh_token"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        scopes=SCOPES["ga4"],
+    )
+    client = ga_data.BetaAnalyticsDataClient(credentials=credentials)
+
+    req = RunReportRequest(
+        property=f"properties/{property_id}",
+        date_ranges=[DateRange(start_date=start_date, end_date=end_date)],
+        dimensions=[Dimension(name="date")],
+        metrics=[Metric(name="totalUsers"), Metric(name="sessions"), Metric(name="screenPageViews"),],
+    )
+    resp = client.run_report(req)
+    rows = [{"date": r.dimension_values[0].value,
+             "users": int(r.metric_values[0].value or 0),
+             "sessions": int(r.metric_values[1].value or 0),
+             "views": int(r.metric_values[2].value or 0)} for r in resp.rows]
+    return {"rows": rows}
+
+# -------- GSC: query básico ----------
+@app.get("/gsc/query")
+async def gsc_query(site_url: str, site: str, start_date: str, end_date: str, dimensions: str = "page,query"):
+    if gapi_build is None or oauth2_credentials is None:
+        return JSONResponse(
+            {"error": "Dependencias de Google Search Console no instaladas (`google-api-python-client`)."},
+            status_code=501,
+        )
+    conn = get_connection("gsc", site)
+    if not conn: return JSONResponse({"error":"GSC no conectado para este sitio"}, status_code=400)
+    tokens = await refresh_access_token(conn["refresh_token"])
+    cred = tokens["access_token"]
+
+    credentials = oauth2_credentials.Credentials(
+        token=cred,
+        refresh_token=conn["refresh_token"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        scopes=SCOPES["gsc"],
+    )
+    svc = gapi_build("searchconsole", "v1", credentials=credentials)
+    dims = [d.strip() for d in dimensions.split(",") if d.strip()]
+    body = {"startDate": start_date, "endDate": end_date, "dimensions": dims, "rowLimit": 250}
+    res = svc.searchanalytics().query(siteUrl=site_url, body=body).execute()
+    return res
 
 
 @app.get("/health")
@@ -72,6 +219,7 @@ async def diagnostic(
     gsc_property: Optional[str] = None,
     serp_keyword: Optional[str] = None,
     serp_location: Optional[str] = None,
+    site: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Full diagnostic combining crawl, on-page, PSI and optional external data."""
 
@@ -93,7 +241,7 @@ async def diagnostic(
     }
 
     # Optional data sources
-    response["gsc"] = await _maybe_fetch_gsc(gsc_property or base_url)
+    response["gsc"] = await _maybe_fetch_gsc(gsc_property or base_url, site or base_url)
     response["rankings"] = await _maybe_fetch_ranking(serp_keyword or (kws[0] if kws else None), base_url)
     response["backlinks"] = await _maybe_fetch_backlinks(base_url)
 
@@ -234,14 +382,68 @@ def _wrap_result(result: Any) -> Dict[str, Any]:
     return {"ok": True, "data": result}
 
 
-async def _maybe_fetch_gsc(property_url: Optional[str]) -> Dict[str, Any]:
+async def _maybe_fetch_gsc(property_url: Optional[str], site: str) -> Dict[str, Any]:
+    if gapi_build is not None and oauth2_credentials is not None:
+        conn = get_connection("gsc", site)
+        if conn:
+            try:
+                tokens = await refresh_access_token(conn["refresh_token"])
+                credentials = oauth2_credentials.Credentials(
+                    token=tokens.get("access_token"),
+                    refresh_token=conn["refresh_token"],
+                    token_uri="https://oauth2.googleapis.com/token",
+                    client_id=os.getenv("GOOGLE_CLIENT_ID"),
+                    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+                    scopes=SCOPES["gsc"],
+                )
+                service = gapi_build("searchconsole", "v1", credentials=credentials)
+                end = dt.date.today() - dt.timedelta(days=1)
+                start = end - dt.timedelta(days=27)
+                site_url = property_url or conn.get("site") or site
+                if not site_url.startswith("http"):
+                    site_url = f"https://{site_url.strip()}"
+                body = {
+                    "startDate": start.isoformat(),
+                    "endDate": end.isoformat(),
+                    "dimensions": ["query"],
+                    "rowLimit": 25,
+                }
+                response = service.searchanalytics().query(siteUrl=site_url, body=body).execute()
+                rows = response.get("rows", []) if isinstance(response, dict) else []
+                clicks = sum(row.get("clicks", 0) for row in rows)
+                impressions = sum(row.get("impressions", 0) for row in rows)
+                ctr = clicks / impressions if impressions else 0
+                avg_position = (
+                    sum(row.get("position", 0) for row in rows) / len(rows) if rows else None
+                )
+                return {
+                    "available": True,
+                    "clicks": round(clicks),
+                    "impressions": round(impressions),
+                    "ctr": round(ctr, 4),
+                    "avg_position": round(avg_position, 2) if avg_position is not None else None,
+                    "top_queries": [
+                        {
+                            "query": " ".join(row.get("keys", [])),
+                            "clicks": row.get("clicks", 0),
+                            "impressions": row.get("impressions", 0),
+                            "ctr": row.get("ctr", 0),
+                            "position": row.get("position", 0),
+                        }
+                        for row in rows[:10]
+                    ],
+                    "start_date": start.isoformat(),
+                    "end_date": end.isoformat(),
+                }
+            except Exception as exc:  # pragma: no cover
+                return {"available": False, "reason": f"Error consultando GSC vía OAuth: {exc}"}
+
     if not property_url or fetch_search_console_summary is None:
         return {"available": False, "reason": "Conector de GSC no está configurado."}
 
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, fetch_search_console_summary, property_url)
     return result
-
 
 async def _maybe_fetch_ranking(keyword: Optional[str], base_url: str) -> Dict[str, Any]:
     if not keyword or fetch_rank_positions is None:
@@ -255,3 +457,4 @@ async def _maybe_fetch_backlinks(base_url: str) -> Dict[str, Any]:
         return {"available": False, "reason": "Conector de backlinks no está configurado."}
     domain = base_url.replace("https://", "").replace("http://", "")
     return await fetch_backlink_overview(domain)
+

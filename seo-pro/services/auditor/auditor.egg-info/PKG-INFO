@@ -8,3 +8,4 @@ Requires-Dist: httpx
 Requires-Dist: selectolax
 Requires-Dist: beautifulsoup4
 Requires-Dist: pydantic
+Requires-Dist: python-dotenv

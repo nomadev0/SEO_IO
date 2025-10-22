@@ -52,6 +52,7 @@ export type DiagnosticRequest = {
   keywords: string;
   maxUrls: number;
   psiStrategy: 'mobile' | 'desktop';
+  siteHost: string;
   gscProperty?: string;
   serpKeyword?: string;
   serpLocation?: string;

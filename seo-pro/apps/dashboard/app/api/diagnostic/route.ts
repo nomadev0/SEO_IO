@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     keywords?: string;
     maxUrls?: number;
     psiStrategy?: 'mobile' | 'desktop';
+    siteHost?: string;
     gscProperty?: string;
     serpKeyword?: string;
     serpLocation?: string;
@@ -24,12 +25,14 @@ export async function POST(request: NextRequest) {
   const keywords = body.keywords ?? '';
   const maxUrls = Math.max(20, Math.min(body.maxUrls ?? 80, 500));
   const psiStrategy = body.psiStrategy === 'desktop' ? 'desktop' : 'mobile';
+  const siteHost = body.siteHost ?? targetUrl;
 
   const params = new URLSearchParams({
     url: targetUrl,
     keywords,
     max_urls: String(maxUrls),
     psi_strategy: psiStrategy,
+    site: siteHost,
   });
   if (body.gscProperty) params.set('gsc_property', body.gscProperty);
   if (body.serpKeyword) params.set('serp_keyword', body.serpKeyword);

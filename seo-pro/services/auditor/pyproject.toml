@@ -9,4 +9,6 @@ dependencies = [
   "selectolax",
   "beautifulsoup4",
   "pydantic",
+  "python-dotenv",
 ]
+

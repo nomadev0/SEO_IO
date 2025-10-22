@@ -5,6 +5,7 @@ auditor/analyzer.py
 auditor/api.py
 auditor/ci_guardrails.py
 auditor/crawler.py
+auditor/google_oauth.py
 auditor/rules.py
 auditor.egg-info/PKG-INFO
 auditor.egg-info/SOURCES.txt

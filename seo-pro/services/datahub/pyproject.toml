@@ -9,6 +9,12 @@ dependencies = [
   "google-api-python-client",
   "google-auth",
   "google-auth-oauthlib",
+  "google-analytics-data",
+  "google-analytics-admin",
+  "sqlmodel",
+  "cryptography",
+  "itsdangerous",
+
 ]
 requires-python = ">=3.11"
 
@@ -18,3 +24,4 @@ backlinks = []
 
 [tool.setuptools.packages.find]
 where = ["datahub"]
+

@@ -4,3 +4,4 @@ httpx
 selectolax
 beautifulsoup4
 pydantic
+python-dotenv

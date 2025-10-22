@@ -1,0 +1,15 @@
+httpx
+pydantic>=2
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-analytics-data
+google-analytics-admin
+sqlmodel
+cryptography
+itsdangerous
+
+[backlinks]
+
+[serp]
+serpapi>=0.1.5

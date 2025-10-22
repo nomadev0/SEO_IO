@@ -16,6 +16,7 @@ import { ScoreGauge } from '../components/ScoreGauge';
 import IssuesTable from '../components/IssuesTable';
 import { MetricCard } from '../components/MetricCard';
 import { SeverityPie, TopHeavyBar } from '../components/Charts';
+import { ConnectButtons } from '../components/ConnectButtons';
 
 const SEVERITY_ORDER: Severity[] = ['Critical', 'High', 'Medium', 'Low'];
 
@@ -35,13 +36,24 @@ export default function DashboardPage() {
   const [rankingSummary, setRankingSummary] = useState<Record<string, any> | null>(null);
   const [backlinkSummary, setBacklinkSummary] = useState<Record<string, any> | null>(null);
 
+  const [serviceNotice, setServiceNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     health()
-      .then(() => setApiUp(true))
-      .catch(() => setApiUp(false));
+      .then(() => {
+        setApiUp(true);
+        setServiceNotice(null);
+      })
+      .catch((err) => {
+        setApiUp(false);
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'No se pudo contactar con el servicio auditor en http://127.0.0.1:8000. Asegrate de que est ejecutndose.';
+        setServiceNotice(message);
+      });
   }, []);
 
   const auditCounts = useMemo(() => {
@@ -124,6 +136,14 @@ export default function DashboardPage() {
     }
   }, [targetUrl]);
 
+  const siteOrigin = useMemo(() => {
+    try {
+      return new URL(targetUrl).origin;
+    } catch {
+      return `https://${hostname}`;
+    }
+  }, [targetUrl, hostname]);
+
   async function handleFullDiagnostic() {
     setDiagnosticLoading(true);
     setError(null);
@@ -137,6 +157,7 @@ export default function DashboardPage() {
         keywords,
         maxUrls,
         psiStrategy,
+        siteHost: siteOrigin,
       });
 
       const errors: string[] = [];
@@ -210,7 +231,8 @@ export default function DashboardPage() {
                   Alcance: dominio raíz · {apiUp === false ? 'API desconectada' : 'API lista'}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <ConnectButtons site={siteOrigin} />
                 <button className="rounded-full border border-neutral-200 px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100">
                   Exportar informe
                 </button>
@@ -290,7 +312,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={diagnosticLoading || apiUp === false}
+                    disabled={diagnosticLoading}
                     className="rounded-full bg-black px-5 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {diagnosticLoading ? 'Diagnosticando...' : 'Lanzar diagnóstico completo'}
@@ -303,6 +325,11 @@ export default function DashboardPage() {
 
         <main className="flex-1 overflow-y-auto px-6 py-6">
           <div className="space-y-6">
+            {serviceNotice ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {serviceNotice}
+              </div>
+            ) : null}
             {error ? (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
