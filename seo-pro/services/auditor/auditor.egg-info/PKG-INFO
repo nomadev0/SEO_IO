@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: auditor
+Version: 0.1.0
+Author: SEO-Pro
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: httpx
+Requires-Dist: selectolax
+Requires-Dist: beautifulsoup4
+Requires-Dist: pydantic

@@ -1,0 +1,42 @@
+name: SEO Guardrails
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run SEO Lint (Preview)
+        env:
+          PREVIEW_URL: ${{ secrets.SEO_PREVIEW_URL }}
+        run: node scripts/ci/seo-lint.mjs
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Auditor
+        run: |
+          cd services/auditor
+          python -m pip install -U pip
+          pip install -e .
+
+      - name: Run Auditor Guardrails (crawl selectivo)
+        env:
+          BASE_URL: ${{ secrets.SEO_PREVIEW_URL }}
+          MAX_URLS: '50'
+        run: |
+          cd services/auditor
+          python -m auditor.ci_guardrails

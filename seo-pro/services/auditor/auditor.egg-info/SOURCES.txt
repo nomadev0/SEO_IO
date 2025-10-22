@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+auditor/__init__.py
+auditor/analyzer.py
+auditor/api.py
+auditor/ci_guardrails.py
+auditor/crawler.py
+auditor/rules.py
+auditor.egg-info/PKG-INFO
+auditor.egg-info/SOURCES.txt
+auditor.egg-info/dependency_links.txt
+auditor.egg-info/requires.txt
+auditor.egg-info/top_level.txt

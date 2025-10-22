@@ -1,0 +1,20 @@
+[project]
+name = "seo-pro-datahub"
+version = "0.1.0"
+description = "Connectors for external SEO data sources (GSC, rank tracking, backlinks)."
+authors = [{name = "SEO PRO"}]
+dependencies = [
+  "httpx",
+  "pydantic>=2",
+  "google-api-python-client",
+  "google-auth",
+  "google-auth-oauthlib",
+]
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+serp = ["serpapi>=0.1.5"]
+backlinks = []
+
+[tool.setuptools.packages.find]
+where = ["datahub"]

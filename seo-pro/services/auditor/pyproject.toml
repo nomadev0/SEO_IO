@@ -1,0 +1,12 @@
+[project]
+name = "auditor"
+version = "0.1.0"
+authors = [{name = "SEO-Pro"}]
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "httpx",
+  "selectolax",
+  "beautifulsoup4",
+  "pydantic",
+]
