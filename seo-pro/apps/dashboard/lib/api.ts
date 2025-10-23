@@ -68,6 +68,7 @@ export type DiagnosticResponse = {
   audit: ServiceResult<AuditResponse>;
   analysis: ServiceResult<AnalyzePage>;
   psi: ServiceResult<PsiResponse>;
+  ga4?: Record<string, unknown>;
   gsc?: Record<string, unknown>;
   rankings?: Record<string, unknown>;
   backlinks?: Record<string, unknown>;

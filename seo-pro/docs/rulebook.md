@@ -5,6 +5,8 @@
 - HTTP 4xx/5xx responses on internal links or sitemap entries.
 - Mixed protocol (HTTPS downgrade) on canonical templates.
 
+
+
 ## High
 - Missing or conflicting canonical.
 - robots.txt blocking URLs with search demand.
