@@ -112,3 +112,23 @@ export async function runDiagnostic(payload: DiagnosticRequest): Promise<Diagnos
 export async function pingAuditorDirect(): Promise<void> {
   await fetchJson(`${AUDITOR_BASE}/health`, { headers: { accept: 'application/json' } });
 }
+
+
+const BASE =AUDITOR_BASE;
+
+async function json(url:string){
+const r = await fetch(url, { next: { revalidate: 0 } })
+if(!r.ok) throw new Error(await r.text())
+return r.json()
+}
+
+
+export const api = {
+status: (site:string)=> json(`${BASE}/integrations/status?site=${encodeURIComponent(site)}`),
+psi: (url:string,strat:'mobile'|'desktop'='mobile')=> json(`${BASE}/psi?url=${encodeURIComponent(url)}&strategy=${strat}`),
+analyze: (url:string,kws:string[]=[])=> json(`${BASE}/analyze?url=${encodeURIComponent(url)}&keywords=${encodeURIComponent(kws.join(','))}`),
+gaProps: (site:string)=> json(`${BASE}/ga4/properties?site=${encodeURIComponent(site)}`),
+gaReport: (site:string, propertyId:string)=> json(`${BASE}/ga4/report?site=${encodeURIComponent(site)}&property_id=${propertyId}`),
+gscSites: (site:string)=> json(`${BASE}/gsc/sites?site=${encodeURIComponent(site)}`),
+gscQuery: (site:string, siteUrl:string, start:string,end:string)=> json(`${BASE}/gsc/query?site=${encodeURIComponent(site)}&site_url=${encodeURIComponent(siteUrl)}&start_date=${start}&end_date=${end}&dimensions=page,query`)
+}

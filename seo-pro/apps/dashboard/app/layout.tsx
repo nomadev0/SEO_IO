@@ -1,15 +1,15 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import './globals.css'
+import { ReactNode } from 'react'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'SEO PRO Dashboard',
-  description: 'Suite de auditoría y análisis SEO de alto impacto.',
-};
+  description: 'Suite de auditoria y analisis SEO de alto impacto',
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es">
-      <body className="min-h-screen bg-neutral-100 text-neutral-900">{children}</body>
+    <html lang="es" className="h-full">
+      <body className="min-h-full bg-slate-50 text-slate-900 antialiased">{children}</body>
     </html>
-  );
+  )
 }

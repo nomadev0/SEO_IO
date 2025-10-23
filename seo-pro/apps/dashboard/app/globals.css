@@ -2,5 +2,120 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light dark; }
-body { @apply bg-neutral-50 text-neutral-900; }
+:root {
+  --bg: #0f1221;
+  --card: #121630;
+  --muted: #8891a7;
+  --ring: #3a60f2;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #1f2937;
+}
+
+body.dark {
+  background-color: var(--bg);
+  color: #ffffff;
+}
+
+.card,
+.kpi {
+  border-radius: 1.25rem;
+  background-color: #ffffff;
+  box-shadow: 0 12px 24px -10px rgba(24,39,75,0.12), 0 4px 12px -6px rgba(24,39,75,0.08);
+  padding: 1.25rem;
+  border: 1px solid transparent;
+}
+
+.kpi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+body.dark .card,
+body.dark .kpi {
+  background-color: var(--card);
+  border-color: rgba(255,255,255,0.05);
+}
+
+.stat {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.subtle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+body.dark .subtle {
+  color: rgba(255,255,255,0.6);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #111827;
+  color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+  background-color: #1f2937;
+}
+
+body.dark .btn {
+  background-color: rgba(255,255,255,0.08);
+}
+
+body.dark .btn:hover {
+  background-color: rgba(255,255,255,0.12);
+}
+
+.icon-btn {
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.icon-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+body.dark .icon-btn:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.input {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(58,96,242,0.5);
+  box-shadow: 0 0 0 3px rgba(58,96,242,0.15);
+}
+
+body.dark .input {
+  border-color: rgba(255,255,255,0.1);
+  background-color: rgba(255,255,255,0.05);
+  color: #ffffff;
+}
+
