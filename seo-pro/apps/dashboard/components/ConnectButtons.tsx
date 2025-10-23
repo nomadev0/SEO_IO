@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import { useState } from 'react';
 
 type Provider = 'ga4' | 'gsc';
@@ -32,15 +30,20 @@ export function ConnectButtons({ site }: { site: string }) {
     }
   }
 
-  const buttonBase =
-    'rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/20 disabled:cursor-wait disabled:opacity-60';
-
   return (
     <div className="flex gap-2">
-      <button className={buttonBase} onClick={() => connect('ga4')} disabled={loading !== null}>
+      <button
+        className="btn btn-ghost disabled:opacity-50"
+        onClick={() => connect('ga4')}
+        disabled={loading !== null}
+      >
         {loading === 'ga4' ? 'Conectando GA4...' : 'Conectar GA4'}
       </button>
-      <button className={buttonBase} onClick={() => connect('gsc')} disabled={loading !== null}>
+      <button
+        className="btn btn-primary disabled:opacity-50"
+        onClick={() => connect('gsc')}
+        disabled={loading !== null}
+      >
         {loading === 'gsc' ? 'Conectando GSC...' : 'Conectar GSC'}
       </button>
     </div>
