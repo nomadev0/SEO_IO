@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mindraft · E‑commerce Store — Réplica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      /* Colores aproximados extraídos de las capturas */
+      --bg: #fcfcfb;
+      --card: #ffffff;
+      --border: #e7eaee;
+      --text: #1f2430;
+      --muted: #5f6472;
+      --muted-2:#8b91a1;
+      --chip:#f4f6f9;
+      --chip-border:#e8ebf1;
+      --primary:#6366f0;      /* azul/indigo del header y botones */
+      --primary-600:#5458e6;
+      --accent:#0ab1d6;       /* cian de gráficos */
+      --accent-600:#0c92b0;
+      --accent-2:#67a0de;     /* azul claro de barras */
+      --gold:#e8b109;         /* dorado de etiquetas */
+      --green:#16a34a;        /* positivos */
+      --red:#ef4444;          /* negativos */
+      --amber:#f59e0b;        /* warnings */
+      --shadow: 0 1px 1px rgba(16,24,40,.04), 0 2px 8px rgba(16,24,40,.06);
+      --radius: 10px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      line-height:1.4;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:14px 16px 60px}
+
+    /* Topbar */
+    .topbar{display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); background:#fff; border-radius:12px; box-shadow:var(--shadow);}
+    .dot{width:10px; height:10px; background:var(--primary); border-radius:50%}
+    .brand{font-weight:700; font-size:14px}
+    .chipbox{display:flex; gap:8px; align-items:center}
+    .pill{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--chip-border); background:var(--chip); padding:6px 10px; border-radius:8px; font-size:12px; color:#2d3343}
+    .pill strong{font-weight:600}
+    .right{margin-left:auto; display:flex; gap:8px; align-items:center}
+    .btn{background:var(--primary); color:#fff; border:none; padding:8px 12px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer}
+    .btn.secondary{background:#fff; color:#2c3240; border:1px solid var(--border)}
+
+    /* Breadcrumbs */
+    .crumbs{margin:10px 0 6px; color:var(--muted-2); font-size:12px}
+    .crumbs a{color:var(--muted-2); text-decoration:none}
+
+    /* KPI cards */
+    .kpis{display:grid; grid-template-columns: repeat(6, 1fr); gap:12px}
+    .kpi{background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:12px}
+    .kpi h4{margin:0 0 4px; font-size:12px; color:#6b7280; font-weight:600}
+    .kpi .value{display:flex; align-items:baseline; gap:8px}
+    .kpi .value b{font-size:22px}
+    .delta{font-size:12px; font-weight:600}
+    .up{color:var(--green)}
+    .down{color:var(--red)}
+
+    /* Main grid with rail */
+    .grid{display:grid; grid-template-columns: 1fr 330px; gap:12px; margin-top:12px}
+
+    .card{background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow);}
+    .card .hd{padding:12px 12px 0; display:flex; align-items:center; justify-content:space-between}
+    .card .hd h3{margin:0; font-size:14px}
+    .card .bd{padding:12px}
+    .legend{display:flex; gap:8px; flex-wrap:wrap}
+    .legend .tag{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--chip-border); background:var(--chip); border-radius:8px; font-size:12px}
+    .dot-c{width:8px; height:8px; border-radius:50%}
+    .c-clicks{background:#3b82f6}
+    .c-impr{background:#a0abdc}
+    .c-ctr{background:#0ab1d6}
+    .c-pos{background:#f59e0b}
+
+    /* Simple line chart (svg) */
+    .chart-area{height:250px; border-top:1px dashed #eef1f5;}
+
+    /* Tables */
+    table{width:100%; border-collapse:separate; border-spacing:0 8px}
+    th{color:#80869a; font-size:12px; text-align:left; padding:0 8px}
+    td{background:#fff; border:1px solid var(--border); border-left:none; border-right:none; padding:10px 8px; font-size:13px}
+    tr{border-radius:8px}
+    tr td:first-child{border-radius:8px 0 0 8px; border-left:1px solid var(--border)}
+    tr td:last-child{border-radius:0 8px 8px 0; border-right:1px solid var(--border)}
+
+    /* Right rail widgets */
+    .list{display:flex; flex-direction:column; gap:10px}
+    .win{border:1px dashed #e7ebf2; border-radius:10px; padding:10px; background:#fbfcff}
+    .win h4{margin:0 0 4px; font-size:13px}
+    .meta{display:flex; gap:10px; color:#6b7280; font-size:12px}
+    .badge{margin-left:auto; background:#ecfdf5; color:var(--green); border:1px solid #d1fadf; padding:4px 6px; border-radius:6px; font-weight:700; font-size:12px}
+
+    .issues .item{display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--border); border-radius:10px}
+    .issues .ico{width:28px; height:28px; border-radius:8px; display:grid; place-items:center}
+    .ico.red{background:#ffe4e6; color:#b42318}
+    .ico.amber{background:#fff7ed; color:#a16207}
+    .ico.blue{background:#eff6ff; color:#1d4ed8}
+    .count{margin-left:auto; font-weight:700; color:#111827}
+    .sub{font-size:12px; color:#6b7280}
+
+    /* Status chips */
+    .status{font-size:11px; font-weight:700; padding:4px 6px; border-radius:999px; border:1px solid;}
+    .s-ok{background:#ecfdf5; color:#067647; border-color:#abefc6}
+    .s-warn{background:#fffbeb; color:#92400e; border-color:#fde68a}
+    .s-crit{background:#fef2f2; color:#b42318; border-color:#fecaca}
+
+    /* CTA footer cards */
+    .cta-row{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px}
+    .cta{display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; background:#fff; padding:14px}
+    .cta .ico{width:36px; height:36px; border-radius:10px; display:grid; place-items:center}
+
+    /* Section spacings */
+    .mt{margin-top:12px}
+    .mb0{margin-bottom:0}
+    .muted{color:#6b7280}
+    .small{font-size:12px}
+
+    /* Utilities */
+    .right-actions{display:flex; gap:6px; align-items:center}
+    .link{color:#3b82f6; text-decoration:none; font-weight:600}
+    .mini{font-size:11px}
+
+    /* Responsivo */
+    @media (max-width: 1100px){
+      .kpis{grid-template-columns: repeat(3,1fr)}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <span class="dot"></span>
+      <div class="brand">Mindraft</div>
+      <div class="chipbox">
+        <span class="pill"><strong>E‑commerce Store</strong></span>
+        <span class="pill">ecommerce‑store.com</span>
+        <span class="pill">Últimos 28 días</span>
+        <span class="pill">Todos los países</span>
+        <span class="pill">Todos los dispositivos</span>
+        <span class="pill" style="min-width:240px">🔎 Search URLs, queries, widgets…</span>
+      </div>
+      <div class="right">
+        <button class="btn">＋ Add Widget</button>
+        <button class="btn secondary">💾 Save Layout</button>
+      </div>
+    </div>
+
+    <div class="crumbs">Home › Projects › <a href="#">E‑commerce Store</a></div>
+
+    <!-- KPI Row -->
+    <section class="kpis">
+      <div class="kpi">
+        <h4>Total Clicks</h4>
+        <div class="value"><b>24,847</b> <span class="delta up">▲ 12.3%</span></div>
+      </div>
+      <div class="kpi">
+        <h4>Impressions</h4>
+        <div class="value"><b>1.2M</b> <span class="delta up">▲ 18.7%</span></div>
+      </div>
+      <div class="kpi">
+        <h4>Average CTR</h4>
+        <div class="value"><b>2.1%</b> <span class="delta down">▼ 0.3%</span></div>
+      </div>
+      <div class="kpi">
+        <h4>Avg Position</h4>
+        <div class="value"><b>28.4</b> <span class="delta up">▲ 2.1</span></div>
+      </div>
+      <div class="kpi">
+        <h4>No impressions</h4>
+        <div class="value"><b>1,247</b> <span class="delta down">▼ 15.2%</span></div>
+      </div>
+      <div class="kpi">
+        <h4>Open issues</h4>
+        <div class="value"><b>23</b> <span class="delta up" style="color:#0f766e">+3</span></div>
+      </div>
+    </section>
+
+    <!-- Main grid: left content + right rail -->
+    <section class="grid">
+      <div>
+        <!-- GSC Performance Overview -->
+        <article class="card">
+          <div class="hd">
+            <h3>GSC Performance Overview</h3>
+            <div class="legend">
+              <span class="tag"><span class="dot-c c-clicks"></span> Clicks</span>
+              <span class="tag"><span class="dot-c c-impr"></span> Impressions</span>
+              <span class="tag"><span class="dot-c c-ctr"></span> CTR</span>
+              <span class="tag"><span class="dot-c c-pos"></span> Position</span>
+            </div>
+          </div>
+          <div class="bd chart-area">
+            <!-- línea estilo captura -->
+            <svg viewBox="0 0 730 240" width="100%" height="100%">
+              <defs>
+                <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#a0abdc" stop-opacity=".35"/>
+                  <stop offset="100%" stop-color="#a0abdc" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="730" height="240" fill="#fff"/>
+              <!-- grid lines -->
+              <g stroke="#eef1f5" stroke-width="1">
+                <line x1="0" x2="730" y1="40" y2="40"/>
+                <line x1="0" x2="730" y1="90" y2="90"/>
+                <line x1="0" x2="730" y1="140" y2="140"/>
+                <line x1="0" x2="730" y1="190" y2="190"/>
+              </g>
+              <!-- area + line -->
+              <path d="M20,170 L120,130 L220,150 L320,110 L420,85 L520,100 L620,80 L710,60 L710,220 L20,220 Z" fill="url(#g1)"/>
+              <polyline points="20,170 120,130 220,150 320,110 420,85 520,100 620,80 710,60" fill="none" stroke="#67a0de" stroke-width="3" stroke-linecap="round"/>
+              <g fill="#67a0de">
+                <circle cx="20" cy="170" r="3"/>
+                <circle cx="120" cy="130" r="3"/>
+                <circle cx="220" cy="150" r="3"/>
+                <circle cx="320" cy="110" r="3"/>
+                <circle cx="420" cy="85" r="3"/>
+                <circle cx="520" cy="100" r="3"/>
+                <circle cx="620" cy="80" r="3"/>
+                <circle cx="710" cy="60" r="3"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <!-- Top Queries -->
+        <article class="card mt">
+          <div class="hd">
+            <h3>Top Queries</h3>
+            <div class="right-actions small">
+              <span>Top 50</span>
+              <span class="pill">⋮</span>
+            </div>
+          </div>
+          <div class="bd">
+            <table>
+              <thead>
+                <tr>
+                  <th>Query</th>
+                  <th>Clicks</th>
+                  <th>Impressions</th>
+                  <th>CTR</th>
+                  <th>Position</th>
+                  <th>Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>running shoes</td>
+                  <td>2,847</td>
+                  <td>45,231</td>
+                  <td>6.3%</td>
+                  <td>4.2</td>
+                  <td class="up">+12.4%</td>
+                </tr>
+                <tr>
+                  <td>nike shoes</td>
+                  <td>1,934</td>
+                  <td>38,942</td>
+                  <td>5.0%</td>
+                  <td>6.1</td>
+                  <td class="up">+8.7%</td>
+                </tr>
+                <tr>
+                  <td>athletic footwear</td>
+                  <td>1,523</td>
+                  <td>29,847</td>
+                  <td>5.5%</td>
+                  <td>5.1</td>
+                  <td class="down">−3.2%</td>
+                </tr>
+                <tr>
+                  <td>sneakers online</td>
+                  <td>1,247</td>
+                  <td>24,417</td>
+                  <td>5.1%</td>
+                  <td>6.8</td>
+                  <td class="up">+15.2%</td>
+                </tr>
+                <tr>
+                  <td>sports shoes sale</td>
+                  <td>987</td>
+                  <td>24,156</td>
+                  <td>4.1%</td>
+                  <td>7.2</td>
+                  <td class="up">+5.4%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <!-- Top Pages -->
+        <article class="card mt">
+          <div class="hd">
+            <h3>Top Pages</h3>
+            <div class="right-actions small">
+              <span>Top 25</span>
+              <span class="pill">Filter</span>
+            </div>
+          </div>
+          <div class="bd">
+            <table>
+              <thead>
+                <tr>
+                  <th>Page URL</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Position</th><th>Status</th><th>Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>/running-shoes</td><td>4,231</td><td>67,845</td><td>6.2%</td><td>3.8</td><td><span class="status s-ok">Optimized</span></td><td class="up">+18.3%</td>
+                </tr>
+                <tr>
+                  <td>/nike-shoes</td><td>3,542</td><td>59,234</td><td>6.0%</td><td>4.2</td><td><span class="status s-warn">Needs Work</span></td><td class="up">+12.7%</td>
+                </tr>
+                <tr>
+                  <td>/athletic-footwear</td><td>2,847</td><td>52,156</td><td>5.5%</td><td>5.1</td><td><span class="status s-ok">Optimized</span></td><td class="down">−3.2%</td>
+                </tr>
+                <tr>
+                  <td>/sneakers</td><td>2,156</td><td>48,923</td><td>4.4%</td><td>6.8</td><td><span class="status s-crit">Critical</span></td><td class="up">+8.9%</td>
+                </tr>
+                <tr>
+                  <td>/sports-shoes</td><td>1,934</td><td>43,567</td><td>4.4%</td><td>7.2</td><td><span class="status s-warn">Needs Work</span></td><td class="up">+5.4%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <!-- Internal Links + Competitors row -->
+        <div class="grid mt" style="grid-template-columns: 1fr 330px; gap:12px;">
+          <article class="card">
+            <div class="hd">
+              <h3>Internal Links Suggestions</h3>
+            </div>
+            <div class="bd list">
+              <div class="win">
+                <div class="mini" style="display:flex; gap:8px; margin-bottom:8px;">
+                  <span class="status s-ok" style="border-radius:6px">High Impact</span>
+                  <span class="status" style="border-color:#dbeafe; background:#eff6ff; color:#1d4ed8; border-radius:6px">Authority Boost</span>
+                </div>
+                <div class="small"><b>From:</b> /running‑shoes‑guide</div>
+                <div class="small"><b>To:</b> /best‑running‑shoes‑2024</div>
+                <div class="mini muted">Link from high‑traffic guide to product page with anchor “best running shoes for 2024”.</div>
+                <div style="margin-top:8px"><button class="btn mini">Add to Brief</button></div>
+              </div>
+              <div class="win">
+                <div class="mini" style="display:flex; gap:8px; margin-bottom:8px;">
+                  <span class="status" style="border-color:#fde68a; background:#fffbeb; color:#92400e; border-radius:6px">Medium Impact</span>
+                  <span class="status" style="border-color:#ddd; background:#f9fafb; color:#4b5563; border-radius:6px">Relevance</span>
+                </div>
+                <div class="small"><b>From:</b> /nike‑shoes‑collection</div>
+                <div class="small"><b>To:</b> /nike‑air‑max‑sale</div>
+                <div class="mini muted">Cross‑link between related Nike product categories for better navigation.</div>
+                <div style="margin-top:8px"><button class="btn mini">Add to Brief</button></div>
+              </div>
+              <div class="win">
+                <div class="mini" style="display:flex; gap:8px; margin-bottom:8px;">
+                  <span class="status" style="border-color:#e5e7eb; background:#f9fafb; color:#374151; border-radius:6px">Low Impact</span>
+                  <span class="status" style="border-color:#e5e7eb; background:#f9fafb; color:#374151; border-radius:6px">Contextual</span>
+                </div>
+                <div class="small"><b>From:</b> /shoe‑care‑tips</div>
+                <div class="small"><b>To:</b> /shoe‑cleaning‑products</div>
+                <div class="mini muted">Link from care guide to relevant cleaning products for natural flow.</div>
+                <div style="margin-top:8px"><button class="btn mini">Add to Brief</button></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="hd"><h3>Competitors</h3></div>
+            <div class="bd list">
+              <div class="issues item" style="justify-content:space-between">
+                <div>
+                  <div class="small muted">Your Site</div>
+                  <div>ecommerce‑store.com</div>
+                </div>
+                <div class="count">24,847 <span class="mini muted">clicks</span></div>
+              </div>
+              <div class="issues item" style="justify-content:space-between">
+                <div>
+                  <div class="small muted">Competitor A</div>
+                  <div>competitor‑a.com</div>
+                </div>
+                <div class="count">31,245 <span class="mini muted">clicks</span></div>
+              </div>
+              <div class="issues item" style="justify-content:space-between">
+                <div>
+                  <div class="small muted">Competitor B</div>
+                  <div>competitor‑b.com</div>
+                </div>
+                <div class="count">28,984 <span class="mini muted">clicks</span></div>
+              </div>
+              <div class="issues item" style="justify-content:space-between">
+                <div>
+                  <div class="small muted">Competitor C</div>
+                  <div>competitor‑c.com</div>
+                </div>
+                <div class="count">19,667 <span class="mini muted">clicks</span></div>
+              </div>
+              <div style="text-align:center; margin-top:6px"><a class="link" href="#">View Detailed Analysis</a></div>
+            </div>
+          </article>
+        </div>
+
+        <!-- CTR Analysis + Keyword Opportunities + Backlinks -->
+        <div class="grid mt" style="grid-template-columns: 1fr 330px; gap:12px;">
+          <article class="card">
+            <div class="hd"><h3>CTR Analysis by Position</h3></div>
+            <div class="bd">
+              <div style="height:220px;">
+                <svg viewBox="0 0 720 220" width="100%" height="100%">
+                  <rect x="0" y="0" width="720" height="220" fill="#fff"/>
+                  <!-- bars -->
+                  <g fill="#67a0de">
+                    <rect x="40" y="30" width="40" height="150" rx="4"/>
+                    <rect x="100" y="70" width="40" height="110" rx="4"/>
+                    <rect x="160" y="95" width="40" height="85" rx="4"/>
+                    <rect x="220" y="115" width="40" height="65" rx="4"/>
+                    <rect x="280" y="125" width="40" height="55" rx="4"/>
+                    <rect x="340" y="135" width="40" height="45" rx="4"/>
+                    <rect x="400" y="145" width="40" height="35" rx="4"/>
+                    <rect x="460" y="152" width="40" height="28" rx="4"/>
+                    <rect x="520" y="158" width="40" height="22" rx="4"/>
+                    <rect x="580" y="164" width="40" height="16" rx="4"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:10px;">
+                <div class="issues item" style="border-style:dashed">
+                  <div><div class="small muted">Position 1–3</div><div class="up" style="font-weight:800">8.2%</div></div>
+                </div>
+                <div class="issues item" style="border-style:dashed">
+                  <div><div class="small muted">Position 4–6</div><div style="color:#f97316; font-weight:800">3.1%</div></div>
+                </div>
+                <div class="issues item" style="border-style:dashed">
+                  <div><div class="small muted">Position 7–10</div><div class="down" style="font-weight:800">1.4%</div></div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="hd"><h3>Keyword Opportunities</h3></div>
+            <div class="bd list">
+              <div class="win">
+                <h4>waterproof running shoes</h4>
+                <div class="meta"><span>Search Vol: 8,900</span> <span>Difficulty: Medium</span> <span>CPC: $2.40</span> <span class="badge">High</span></div>
+              </div>
+              <div class="win">
+                <h4>trail running shoes men</h4>
+                <div class="meta"><span>Search Vol: 5,400</span> <span>Difficulty: Low</span> <span>CPC: $1.80</span> <span class="badge" style="background:#f0f9ff; color:#075985; border-color:#bae6fd">Medium</span></div>
+              </div>
+              <div class="win">
+                <h4>minimalist running shoes</h4>
+                <div class="meta"><span>Search Vol: 3,200</span> <span>Difficulty: Low</span> <span>CPC: $1.10</span> <span class="badge">High</span></div>
+              </div>
+              <div class="win">
+                <h4>zero drop running shoes</h4>
+                <div class="meta"><span>Search Vol: 2,600</span> <span>Difficulty: Medium</span> <span>CPC: $1.95</span> <span class="badge" style="background:#f0f9ff; color:#075985; border-color:#bae6fd">Medium</span></div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card mt">
+          <div class="hd"><h3>Backlinks Overview</h3></div>
+          <div class="bd">
+            <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap:10px;">
+              <div class="issues item" style="border-style:dashed; justify-content:center; text-align:center"><div><div class="muted mini">Total Backlinks</div><div style="font-size:22px; font-weight:800">1,247</div></div></div>
+              <div class="issues item" style="border-style:dashed; justify-content:center; text-align:center"><div><div class="muted mini">Referring Domains</div><div style="font-size:22px; font-weight:800">234</div></div></div>
+              <div class="issues item" style="border-style:dashed; justify-content:center; text-align:center"><div><div class="muted mini">Domain Authority</div><div style="font-size:22px; font-weight:800">68</div></div></div>
+              <div class="issues item" style="border-style:dashed; justify-content:center; text-align:center"><div><div class="muted mini">New This Month</div><div class="up" style="font-size:22px; font-weight:800">+23</div></div></div>
+            </div>
+
+            <div class="mt">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Referring Domain</th><th>DR</th><th>Links</th><th>Type</th><th>Status</th><th>First Seen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>runningmagazine.com</td><td>72</td><td>3</td><td>Follow</td><td><span class="status s-ok">Active</span></td><td>2024‑01‑15</td>
+                  </tr>
+                  <tr>
+                    <td>fitnessreview.net</td><td>65</td><td>2</td><td>Follow</td><td><span class="status s-ok">Active</span></td><td>2024‑01‑12</td>
+                  </tr>
+                  <tr>
+                    <td>sportblog.org</td><td>58</td><td>1</td><td>Nofollow</td><td><span class="status s-crit">Broken</span></td><td>2024‑01‑08</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- Performance Insights -->
+        <div class="cta-row mt">
+          <div class="cta">
+            <div class="ico" style="background:#ecfdf5; color:#047857">▲</div>
+            <div>
+              <div style="font-weight:700">Traffic Growth Opportunity</div>
+              <div class="muted small">Optimizing your top 10 underperforming pages could increase traffic by <b>34%</b>.</div>
+              <div class="small" style="margin-top:6px"><a class="link" href="#">View Recommendations →</a></div>
+            </div>
+          </div>
+          <div class="cta">
+            <div class="ico" style="background:#f0f9ff; color:#075985">★</div>
+            <div>
+              <div style="font-weight:700">Keyword Ranking Wins</div>
+              <div class="muted small">12 keywords moved into top 10 positions this week. Great progress!</div>
+              <div class="small" style="margin-top:6px"><a class="link" href="#">See Details →</a></div>
+            </div>
+          </div>
+          <div class="cta">
+            <div class="ico" style="background:#fff7ed; color:#a16207">⚠</div>
+            <div>
+              <div style="font-weight:700">Technical Issues Alert</div>
+              <div class="muted small">5 new crawl errors detected. Address these to maintain search visibility.</div>
+              <div class="small" style="margin-top:6px"><a class="link" href="#">Fix issues →</a></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Rail (Quick Wins + Technical Issues) -->
+      <aside>
+        <article class="card">
+          <div class="hd"><h3>Quick Wins</h3></div>
+          <div class="bd list">
+            <div class="win">
+              <h4>best running shoes 2024</h4>
+              <div class="meta"><span>Position 11.2</span> <span>Target: Top 10</span><span>847 impressions</span> <span>23 clicks</span> <span>2.7% CTR</span><span class="badge">+156 clicks</span></div>
+            </div>
+            <div class="win">
+              <h4>nike air max sale</h4>
+              <div class="meta"><span>Position 12.1</span> <span>Target: Top 10</span><span>653 impressions</span> <span>18 clicks</span> <span>2.8% CTR</span><span class="badge">+142 clicks</span></div>
+            </div>
+            <div class="win">
+              <h4>athletic shoes women</h4>
+              <div class="meta"><span>Position 12.8</span> <span>Target: Top 10</span><span>523 impressions</span> <span>16 clicks</span> <span>2.7% CTR</span><span class="badge">+98 clicks</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card mt">
+          <div class="hd"><h3>Technical Issues</h3></div>
+          <div class="bd issues list">
+            <div class="item">
+              <div class="ico red">✖</div>
+              <div>
+                <div><b>404 Errors</b></div>
+                <div class="sub">Pages not found</div>
+              </div>
+              <div class="count">12</div>
+            </div>
+            <div class="item">
+              <div class="ico amber">⏱</div>
+              <div>
+                <div><b>Slow Pages</b></div>
+                <div class="sub">Core Web Vitals</div>
+              </div>
+              <div class="count">8</div>
+            </div>
+            <div class="item">
+              <div class="ico blue">ℹ</div>
+              <div>
+                <div><b>Missing Meta</b></div>
+                <div class="sub">Titles & descriptions</div>
+              </div>
+              <div class="count">3</div>
+            </div>
+            <div style="text-align:center; margin-top:6px"><a href="#" class="link">View All Issues</a></div>
+          </div>
+        </article>
+      </aside>
+    </section>
+
+  </div>
+</body>
+</html>

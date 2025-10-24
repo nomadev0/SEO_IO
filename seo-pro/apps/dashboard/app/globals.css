@@ -6,9 +6,7 @@
   --colors-primary-default: hsl(24, 93%, 55%);
   --colors-primary-foreground: hsl(210, 40%, 98%);
   --colors-background-default: hsl(210, 40%, 98%);
-  --colors-background-dark: hsl(240, 10%, 3.9%);
   --colors-foreground-default: hsl(240, 10%, 3.9%);
-  --colors-foreground-dark: hsl(210, 40%, 98%);
   --colors-card-default: hsl(0, 0%, 100%);
   --colors-card-foreground: hsl(240, 10%, 3.9%);
   --colors-accent-default: hsl(210, 40%, 96.1%);
@@ -36,14 +34,9 @@ body {
 body {
   margin: 0;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background-color: var(--colors-background-default);
+  background: var(--colors-background-default);
   color: var(--colors-foreground-default);
   -webkit-font-smoothing: antialiased;
-}
-
-body.dark {
-  background-color: var(--colors-background-dark);
-  color: var(--colors-foreground-dark);
 }
 
 a {
@@ -52,7 +45,7 @@ a {
 }
 
 .surface {
-  background-color: var(--colors-card-default);
+  background: var(--colors-card-default);
   color: var(--colors-card-foreground);
   border-radius: var(--radius);
   border: 1px solid var(--colors-border-default);
@@ -60,7 +53,7 @@ a {
 }
 
 .surface-muted {
-  background-color: var(--colors-accent-default);
+  background: var(--colors-accent-default);
   color: var(--colors-accent-foreground);
   border-radius: var(--radius);
   border: 1px solid transparent;
@@ -88,14 +81,12 @@ a {
   font-size: 0.875rem;
   font-weight: 500;
   border: 1px solid transparent;
-  background-color: transparent;
-  color: var(--colors-foreground-default);
   cursor: pointer;
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .btn-primary {
-  background-color: var(--colors-primary-default);
+  background: var(--colors-primary-default);
   color: var(--colors-primary-foreground);
   box-shadow: var(--shadow);
 }
@@ -106,19 +97,19 @@ a {
 }
 
 .btn-ghost {
-  background-color: transparent;
+  background: transparent;
   color: var(--colors-foreground-default);
 }
 
 .btn-ghost:hover {
-  background-color: var(--colors-accent-default);
+  background: var(--colors-accent-default);
 }
 
 .input {
   width: 100%;
   border-radius: calc(var(--radius) - 2px);
   border: 1px solid var(--colors-border-default);
-  background-color: #fff;
+  background: #fff;
   padding: 0.6rem 0.85rem;
   font-size: 0.875rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -135,23 +126,37 @@ a {
   align-items: center;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  background-color: var(--colors-accent-default);
+  background: var(--colors-accent-default);
   color: var(--colors-accent-foreground);
   font-size: 0.75rem;
   font-weight: 500;
 }
 
-.card,
 .kpi {
   border-radius: var(--radius);
-  background-color: var(--colors-card-default);
+  background: var(--colors-card-default);
   box-shadow: var(--shadow);
   border: 1px solid var(--colors-border-default);
   padding: 1.5rem;
-}
-
-.kpi {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.45s ease both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }

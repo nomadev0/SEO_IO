@@ -14,7 +14,7 @@ export function ConnectButtons({ site }: { site: string }) {
       const response = await fetch(`/api/oauth/google/start?${params.toString()}`, { cache: 'no-store' });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        const message = (payload && payload.error) || `Auditor respondio ${response.status}`;
+        const message = (payload && payload.error) || `Auditor respondió ${response.status}`;
         throw new Error(message);
       }
       const payload = (await response.json()) as { auth_url?: string; error?: string };
