@@ -1,77 +1,112 @@
-## SEO PRO Platform
+# SEO Pro · Backlinks Toolkit
 
-An end-to-end SEO workspace that combines a technical crawler, on-page analyzer and PageSpeed Insights bridge. The stack is split into:
+Este módulo añade analítica de backlinks al stack existente de SEO Pro. Incluye un servicio FastAPI en `services/backlinks` (Postgres + Redis + RQ) y nuevas vistas en el dashboard principal (`/apps/dashboard`).
 
-- `services/auditor`: FastAPI service that crawls, runs rule-based checks and performs advanced on-page analysis.
-- `services/ai`: FastAPI microservice for local AI-driven insights (copilot, prioritisation, keyword clustering).
-- `apps/dashboard`: Next.js dashboard to orchestrate audits, visualise findings and share action plans.
+## Arquitectura
 
-### Quickstart
+```
+seo-pro/
++- apps/
+¦  +- dashboard/        # Next.js App Router, UI principal
++- services/
+¦  +- backlinks/        # FastAPI + SQLAlchemy 2 + Alembic + RQ worker
++- infra/               # docker-compose del servicio de backlinks
++- Makefile
++- README.md
+```
 
-```bash
-# 1. Auditor API
-cd services/auditor
-python -m venv .venv
-source .venv/bin/activate  # On Windows use .venv\Scripts\activate
-pip install -e .
-uvicorn auditor.api:app --reload  # http://localhost:8000/health
+### Backend (services/backlinks)
+- Modelos: dominios, páginas, backlinks, eventos, alerts y outreach con índices clave.
+- Alembic + seeds (`seed_demo.py`) generan 3 dominios, 1.5k backlinks y 400 eventos.
+- Logging estructurado (`structlog`) y `GET /healthz` para observabilidad.
+- Autenticación stub mediante `Authorization: Bearer devtoken-backlinks`.
+- Worker RQ simula descubrimiento y eventos de backlinks.
+- Tests `pytest` con base SQLite en memoria.
 
-# 2. Dashboard
-cd ../../apps/dashboard
+### Frontend (apps/dashboard)
+- Secciones nuevas en el dashboard principal con KPIs y actividad reciente de enlaces.
+- Página dedicada `/backlinks` con filtros, exportaciones, panel lateral y gráfico “nuevos vs perdidos”.
+- API routes (`/app/api/backlinks/*`) actúan como proxy seguro hacia el servicio FastAPI.
+
+## Puesta en marcha rápida
+
+### Opción Docker
+```
+make up          # levanta Postgres, Redis, API y worker (API expuesta en http://localhost:8100)
+make migrate     # aplica migraciones alembic dentro del contenedor
+make seed        # crea datos demo
+```
+Después abre el dashboard desde el repo (ver apartado “Frontend local”).
+
+### Frontend local
+```
+cd apps/dashboard
 npm install
-npm run dev  # http://localhost:4000
+npm run dev      # http://localhost:3000
+```
+Las llamadas de la UI pasan por los endpoints proxy `/api/backlinks/*`, por lo que el servicio FastAPI debe estar accesible en `BACKLINKS_URL` (por defecto `http://127.0.0.1:8100`).
+Copia o ajusta `apps/dashboard/.env.local` para definir `NEXT_PUBLIC_AUDITOR_URL`, `BACKLINKS_URL` y `BACKLINKS_TOKEN`.
+
+### Backend local sin Docker
+```
+cd services/backlinks
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install --upgrade pip
+pip install -e .[dev]
+python -m alembic upgrade head
+python -m backlinks.seeds.seed_demo
+python -m uvicorn backlinks.main:app --reload --host 0.0.0.0 --port 8100
+```
+Worker (opcional):
+```
+.\.venv\Scripts\activate
+python -m rq worker backlinks
 ```
 
-```bash
-# 3. Datahub (opcional para datos externos)
-cd ../datahub
-pip install -e .
-```
+## Comandos útiles
 
-Set these environment variables in `apps/dashboard/.env.local` if the services run on custom hosts:
+| make target | Descripción |
+|-------------|-------------|
+| `make up`   | docker compose up (db, redis, api, worker) |
+| `make down` | detener contenedores |
+| `make migrate` | `alembic upgrade head` dentro del servicio |
+| `make seed` | poblar datos demo |
+| `make api` | ejecutar FastAPI en modo reload (local) |
+| `make worker` | arrancar worker RQ local |
+| `make web` | `npm run dev` en `apps/dashboard` |
+| `make test` | pytest (backend) + npm test (frontend) |
+| `make lint` | Ruff para backend y ESLint para dashboard |
 
-```
-NEXT_PUBLIC_AUDITOR_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_AI_URL=http://127.0.0.1:8100
-```
+## Superficie API
 
-Optional (para datos de GSC/rankings/backlinks):
+| Ruta | Descripción |
+|------|-------------|
+| `GET /healthz` | Healthcheck |
+| `POST /projects/{id}/domains` | Alta de dominio objetivo/competidor |
+| `GET /backlinks` | Listado paginado con filtros (rel, status, q, rango fechas, etc.) |
+| `GET /backlinks/events` | stream de eventos (new/lost/changed/recovered) |
+| `GET /backlinks/kpis` | KPIs agregados del proyecto |
+| `GET /backlinks/series` | Serie temporal nuevos vs perdidos |
+| `GET /export/backlinks.csv` | Export CSV según filtros activos |
+| `POST /disavow/export` | Genera disavow.txt con filtros vigentes |
+| `GET /domains/top` | Dominio con más enlaces entrantes |
+| `POST /alerts` / `GET /alerts` | CRUD básico de reglas de alerta |
 
-```
-# Search Console
-GSC_SERVICE_ACCOUNT_FILE=/ruta/credenciales.json
-# o define GSC_SERVICE_ACCOUNT_JSON con el contenido
+Todas las rutas esperan el token de desarrollo: `Authorization: Bearer devtoken-backlinks`.
 
-# Rank tracking via SerpAPI
-SERP_API_KEY=tu_api_key
-SERP_LOCATION="Spain"
+## Experiencia UI
+- Resumen de backlinks en el dashboard principal (KPIs + eventos recientes).
+- Página específica `/backlinks` con:
+  - filtros rápido (rel, estado, búsqueda) y paginado incremental,
+  - gráfico comparativo nuevos vs perdidos (7/30/90/custom),
+  - exportaciones CSV y disavow desde la misma vista,
+  - panel lateral con detalles completos del enlace seleccionado,
+  - secciones “Domain overview”, “Organic research”, “Keyword gap” y “Backlink gap” enlazadas desde la sidebar.
 
-# Backlinks (Ahrefs)
-BACKLINK_PROVIDER=ahrefs
-BACKLINK_API_KEY=tu_token
-BACKLINK_API_BASE=https://apiv2.ahrefs.com
-```
+## Flujo del worker simulado
+1. Selecciona dominio y genera páginas candidato.
+2. Calcula enlaces con heurísticas de autoridad/toxicidad.
+3. Inserta eventos `LinkEvent` (new/lost/changed) comparando snapshots.
 
-### Features
-
-- Technical crawl with severity-weighted rule engine and CI guardrails.
-- On-page analyzer with keyword coverage, readability score, link/media stats and actionable recommendations.
-- PageSpeed Insights integration including heavy resource breakdown.
-- Filtering, severity charts and triage tooling directly in the dashboard.
-
-### PrÃ³ximos pasos sugeridos
-
-1. **IntegraciÃ³n de datos reales**: crear un servicio de proyectos que ingeste Google Search Console y GA4 a diario (ETL + BigQuery/ClickHouse) y exponga `/projects/{id}/overview` para poblar el dashboard con trÃ¡fico, CTR y queries reales.
-2. **Planificador de auditorÃ­as/PSI**: programar crawls recurrentes y lotes de PageSpeed (con cachÃ© de resultados) para evitar lÃ­mites de la API y mostrar tendencias.
-3. **Rank tracking y backlinks**: desplegar un microservicio de SERP tracking multipaÃ­s y conectores de backlinks (Majestic/Ahrefs) para reemplazar mÃ©tricas dummy por datos vivos.
-4. **Alertas y reporting**: generar alertas automÃ¡ticas (Slack/email/webhook) ante caÃ­das de rankings o issues crÃ­ticos y automatizar reportes PDF/Slides.
-
-### Roadmap Ideas
-
-- Extender la rulebook con hreflang, sitemap freshness y Core Web Vitals por plantilla.
-- Incorporar colaboraciÃ³n (comentarios, Slack, exportaciÃ³n a tickets).
-- Publicar auto-fixes (structured data, meta tags, optimizaciÃ³n de imÃ¡genes).
-
-### Contributing
-
-Run `npm run lint` and `pytest` before pushing. The repo ships with SEO guardrails that fail CI when critical regressions appear. See `services/auditor/auditor/ci_guardrails.py` for details.
+Este flujo permite validar UI y API sin crawler real; sustituir la lógica por integraciones reales en fases posteriores.

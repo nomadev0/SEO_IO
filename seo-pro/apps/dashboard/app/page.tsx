@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   health,
   runDiagnostic,
@@ -10,6 +11,14 @@ import {
   type PsiResponse,
   type Severity,
 } from '../lib/api';
+import {
+  getBacklinkEvents,
+  getBacklinkKpis,
+  getBacklinkList,
+  type BacklinkEvent,
+  type BacklinkKpis,
+  type BacklinkRecord,
+} from '../lib/backlinks';
 import IssuesTable from '../components/IssuesTable';
 import {
   SeverityPie,
@@ -38,11 +47,19 @@ import {
 } from 'lucide-react';
 
 const SEVERITY_ORDER: Severity[] = ['Critical', 'High', 'Medium', 'Low'];
+const BACKLINKS_PROJECT_ID = 1;
 
 const formatNumber = (value: number | null | undefined) =>
   value === null || value === undefined || Number.isNaN(value)
     ? 'n/d'
     : Number(value).toLocaleString('es-ES');
+const formatDecimal = (value: number | null | undefined, digits = 1) =>
+  value === null || value === undefined || Number.isNaN(value)
+    ? 'n/d'
+    : Number(value).toLocaleString('es-ES', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
 
 const formatDateLabel = (value: string) => {
   if (!value) return '';
@@ -54,6 +71,30 @@ const formatDateLabel = (value: string) => {
     });
   }
   return value;
+};
+const formatEventType = (type: string) => {
+  switch (type) {
+    case 'new':
+      return 'Nuevo';
+    case 'lost':
+      return 'Perdido';
+    case 'changed':
+      return 'Actualizado';
+    case 'recovered':
+      return 'Recuperado';
+    default:
+      return type;
+  }
+};
+const formatDateTime = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'n/d';
+  return date.toLocaleString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const humanizeMetric = (value: string) =>
@@ -78,6 +119,12 @@ type GscQuery = {
 
 export default function DashboardPage() {
   const [apiUp, setApiUp] = useState<boolean | null>(null);
+
+  const [backlinkKpis, setBacklinkKpis] = useState<BacklinkKpis | null>(null);
+  const [backlinkEvents, setBacklinkEvents] = useState<BacklinkEvent[]>([]);
+  const [recentBacklinks, setRecentBacklinks] = useState<BacklinkRecord[]>([]);
+  const [backlinkLoading, setBacklinkLoading] = useState(false);
+  const [backlinkError, setBacklinkError] = useState<string | null>(null);
 
   const [targetUrl, setTargetUrl] = useState('https://example.com');
   const [keywords, setKeywords] = useState('');
@@ -111,6 +158,26 @@ export default function DashboardPage() {
             : 'No se pudo contactar con el auditor en http://127.0.0.1:8000. Asegurate de que este ejecutandose.'
         );
       });
+  }, []);
+
+  useEffect(() => {
+    setBacklinkLoading(true);
+    Promise.all([
+      getBacklinkKpis(BACKLINKS_PROJECT_ID),
+      getBacklinkEvents(BACKLINKS_PROJECT_ID),
+      getBacklinkList({ project_id: BACKLINKS_PROJECT_ID, page: 1, page_size: 6 }),
+    ])
+      .then(([kpis, events, backlinks]) => {
+        setBacklinkKpis(kpis);
+        setBacklinkEvents(events);
+        setRecentBacklinks(backlinks.items);
+        setBacklinkError(null);
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        setBacklinkError(message);
+      })
+      .finally(() => setBacklinkLoading(false));
   }, []);
   const auditCounts = useMemo(() => {
     const counts = new Map<Severity, number>();
@@ -231,6 +298,48 @@ export default function DashboardPage() {
     if (notice) list.push({ type: 'notice', message: notice });
     return list;
   }, [error, notice, serviceNotice]);
+  const backlinkHighlights = useMemo(() => {
+    if (!backlinkKpis) return [];
+    const follow = formatDecimal(backlinkKpis.follow_ratio);
+    const toxicity = formatDecimal(backlinkKpis.toxicity_avg);
+    return [
+      {
+        label: 'Backlinks totales',
+        value: formatNumber(backlinkKpis.total_backlinks),
+        delta: `+${formatNumber(backlinkKpis.new_30)} (30d)`,
+      },
+      {
+        label: 'Referring domains',
+        value: formatNumber(backlinkKpis.referring_domains),
+      },
+      {
+        label: 'Nuevos (7d)',
+        value: formatNumber(backlinkKpis.new_7),
+        delta: `30d: ${formatNumber(backlinkKpis.new_30)}`,
+      },
+      {
+        label: 'Perdidos (7d)',
+        value: formatNumber(backlinkKpis.lost_7),
+        delta: `30d: ${formatNumber(backlinkKpis.lost_30)}`,
+      },
+      {
+        label: '% Follow',
+        value: follow === 'n/d' ? follow : `${follow}%`,
+      },
+      {
+        label: 'Toxicidad media',
+        value: toxicity,
+      },
+    ];
+  }, [backlinkKpis]);
+  const recentBacklinkEvents = useMemo(() => {
+    if (backlinkEvents.length === 0) return [];
+    const index = new Map(recentBacklinks.map((item) => [item.id, item]));
+    return backlinkEvents.slice(0, 6).map((event) => ({
+      event,
+      backlink: index.get(event.backlink_id) ?? null,
+    }));
+  }, [backlinkEvents, recentBacklinks]);
 
   const kpiCards = [
     {
@@ -450,6 +559,75 @@ export default function DashboardPage() {
             <span className="ml-auto text-[var(--colors-muted-foreground)]">Periodo automatico</span>
           )}
         </nav>
+
+        <Section
+          title="Backlinks overview"
+          className="transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadows-md)]"
+          actions={
+            <Link
+              href="/backlinks"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--colors-primary-default)] hover:underline"
+            >
+              Ver dashboard completo
+            </Link>
+          }
+        >
+          {backlinkError && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              {backlinkError}
+            </div>
+          )}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {backlinkHighlights.length > 0 ? (
+              backlinkHighlights.map((card) => (
+                <StatCard key={card.label} label={card.label} value={card.value} delta={card.delta} />
+              ))
+            ) : (
+              <div className="surface-muted rounded-[var(--radius)] p-4 text-xs text-[var(--colors-muted-foreground)]">
+                {backlinkLoading
+                  ? 'Cargando métricas de backlinks...'
+                  : 'Conecta el módulo de backlinks para ver KPIs clave.'}
+              </div>
+            )}
+          </div>
+        </Section>
+
+        <Section
+          title="Eventos recientes de backlinks"
+          className="transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadows-md)]"
+          actions={
+            <Link
+              href="/backlinks#activity"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--colors-primary-default)] hover:underline"
+            >
+              Ver actividad
+            </Link>
+          }
+        >
+          {recentBacklinkEvents.length === 0 ? (
+            <div className="surface-muted rounded-[var(--radius)] p-4 text-xs text-[var(--colors-muted-foreground)]">
+              {backlinkLoading ? 'Sincronizando eventos...' : 'Sin eventos registrados en los últimos días.'}
+            </div>
+          ) : (
+            <Table
+              columns={['Evento', 'Backlink', 'Fecha']}
+              rows={recentBacklinkEvents.map(({ event, backlink }) => [
+                <span
+                  key={`type-${event.id}`}
+                  className="capitalize font-semibold text-[var(--colors-foreground-default)]"
+                >
+                  {formatEventType(event.event_type)}
+                </span>,
+                <span key={`url-${event.id}`} className="truncate text-sm text-[var(--colors-primary-default)]">
+                  {backlink?.target_url ?? `Backlink #${event.backlink_id}`}
+                </span>,
+                <span key={`date-${event.id}`} className="text-xs text-[var(--colors-muted-foreground)]">
+                  {formatDateTime(event.event_at)}
+                </span>,
+              ])}
+            />
+          )}
+        </Section>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <div className="relative overflow-hidden rounded-[var(--radius)] border border-[var(--colors-border-default)] bg-[var(--colors-card-default)] shadow-[var(--shadows-md)] transition hover:-translate-y-1 hover:shadow-lg">

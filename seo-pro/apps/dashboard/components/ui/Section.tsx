@@ -1,15 +1,25 @@
-import { ReactNode } from 'react'
-import { cn } from './utils'
+import { ReactNode } from 'react';
+import { cn } from './utils';
 
-export function Section({ title, actions, children, className }:{ title:string; actions?:ReactNode; children:ReactNode; className?:string }){
+interface SectionProps {
+  title: string;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  id?: string;
+}
+
+export function Section({ title, actions, children, className, id }: SectionProps) {
   return (
-    <section className={cn('surface p-6', className)}>
-      <div className='mb-5 flex items-center justify-between gap-4'>
-        <h3 className='text-sm font-semibold text-[var(--colors-muted-foreground)] uppercase tracking-[0.2em]'>{title}</h3>
+    <section id={id} className={cn('surface p-6', className)}>
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <h3 className="text-sm font-semibold text-[var(--colors-muted-foreground)] uppercase tracking-[0.2em]">
+          {title}
+        </h3>
         {actions}
       </div>
       {children}
     </section>
-  )
+  );
 }
 

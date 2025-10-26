@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: backlinks
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - backlinks-data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  api:
+    build:
+      context: ../services/backlinks
+    environment:
+      BACKLINKS_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/backlinks
+      BACKLINKS_SYNC_DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/backlinks
+      BACKLINKS_REDIS_URL: redis://redis:6379/0
+      BACKLINKS_AUTH_DEV_TOKEN: devtoken-backlinks
+    depends_on:
+      - db
+      - redis
+    ports:
+      - '8100:8000'
+
+  worker:
+    build:
+      context: ../services/backlinks
+    command: ["uv", "run", "rq", "worker", "backlinks"]
+    environment:
+      BACKLINKS_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/backlinks
+      BACKLINKS_SYNC_DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/backlinks
+      BACKLINKS_REDIS_URL: redis://redis:6379/0
+      BACKLINKS_AUTH_DEV_TOKEN: devtoken-backlinks
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  backlinks-data:

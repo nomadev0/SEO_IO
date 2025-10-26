@@ -1,0 +1,85 @@
+[project]
+name = "seo-pro-backlinks"
+version = "0.1.0"
+description = "Backlinks module API for SEO SaaS"
+authors = [{ name = "SEO Pro Team" }]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0,<0.112.0",
+    "uvicorn[standard]>=0.27.0,<0.31.0",
+    "sqlalchemy[asyncio]>=2.0.30,<2.1.0",
+    "asyncpg>=0.29.0,<0.30.0",
+    "psycopg[binary]>=3.1.18,<3.2.0",
+    "alembic>=1.13.1,<1.15.0",
+    "pydantic>=2.6.0,<2.9.0",
+    "pydantic-settings>=2.2.1,<2.4.0",
+    "python-dotenv>=1.0.1,<1.1.0",
+    "redis>=5.0.4,<5.2.0",
+    "rq>=1.16.2,<1.17.0",
+    "structlog>=24.1.0,<24.3.0",
+    "orjson>=3.9.15,<3.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0,<7.5.0",
+    "pytest-asyncio>=0.23.7,<0.24.0",
+    "httpx>=0.27.0,<0.28.0",
+    "pytest-mock>=3.12.0,<3.13.0",
+    "coverage[toml]>=7.4.0,<7.5.0",
+    "mypy>=1.8.0,<1.10.0",
+    "types-redis>=4.6.0.20240311",
+    "ruff>=0.4.2,<0.5.0",
+    "black>=24.2.0,<25.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.4.0,<7.5.0",
+    "pytest-asyncio>=0.23.7,<0.24.0",
+    "httpx>=0.27.0,<0.28.0",
+    "pytest-mock>=3.12.0,<3.13.0",
+    "coverage[toml]>=7.4.0,<7.5.0",
+    "mypy>=1.8.0,<1.10.0",
+    "types-redis>=4.6.0.20240311",
+    "ruff>=0.4.2,<0.5.0",
+    "black>=24.2.0,<25.0.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "S",
+    "N",
+]
+ignore = [
+    "B008",  # FastAPI dependency injection false positive
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+disallow_untyped_defs = true
+warn_unused_ignores = true
+strict_optional = true
+show_error_codes = true
+namespace_packages = true
+

@@ -1,0 +1,9 @@
+{
+  "name": "seo-pro",
+  "private": true,
+  "workspaces": ["apps/dashboard"],
+  "scripts": {
+    "postinstall": "npm run build --workspaces --if-present"
+  }
+}
+
